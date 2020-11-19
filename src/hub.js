@@ -1360,6 +1360,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                   meta.presence === "room" &&
                   meta.profile.displayName
                 ) {
+                  // oli414
+                  BoldInteractions.onUserJoined();
+
                   addToPresenceLog({
                     type: "entered",
                     presence: meta.presence,
@@ -1549,6 +1552,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const maySpawn = scene.is("entered");
 
     const incomingMessage = { name, type, body, maySpawn, sessionId: session_id };
+    
+    // oli414
+    if (BoldInteractions.isActionMessage(incomingMessage)) {
+      BoldInteractions.handleActionMessage(incomingMessage);
+      return;
+    }
 
     if (scene.is("vr-mode")) {
       createInWorldLogMessage(incomingMessage);

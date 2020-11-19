@@ -220,6 +220,9 @@ class UIRoot extends Component {
       this.state.dialog = <SafariMicDialog closable={false} />;
     }
 
+    // oli414
+    window.UIRootInstance = this;
+
     props.mediaSearchStore.setHistory(props.history);
 
     // An exit handler that discards event arguments and can be cleaned up.
