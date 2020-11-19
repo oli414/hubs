@@ -475,6 +475,9 @@ AFRAME.registerComponent("gltf-model-plus", {
     this.jsonPreprocessor = null;
 
     this.loadTemplates();
+    
+    // oli414
+    BoldInteractions.setupModelClickAction(this);
   },
 
   update() {
