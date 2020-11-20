@@ -53,6 +53,8 @@ import LeaveRoomDialog from "./leave-room-dialog.js";
 import RoomInfoDialog from "./room-info-dialog.js";
 import ClientInfoDialog from "./client-info-dialog.js";
 import ObjectInfoDialog from "./object-info-dialog.js";
+// oli414
+import BoldlyInfoPanel from "../BoldlyXR/info-panel.js";
 import OAuthDialog from "./oauth-dialog.js";
 import TweetDialog from "./tweet-dialog.js";
 import LobbyChatBox from "./lobby-chat-box.js";
