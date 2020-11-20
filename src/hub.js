@@ -162,6 +162,9 @@ import { SOUND_CHAT_MESSAGE } from "./systems/sound-effects-system";
 
 import "./gltf-component-mappings";
 
+// oli414
+import BoldInteractions from "./BoldlyXR/interactions.js";
+
 import { App } from "./App";
 import { platformUnsupported } from "./support";
 
@@ -1544,11 +1547,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     const maySpawn = scene.is("entered");
 
     const incomingMessage = { name, type, body, maySpawn, sessionId: session_id };
-    
+
     // oli414
     if (BoldInteractions.isActionMessage(incomingMessage)) {
-      BoldInteractions.handleActionMessage(incomingMessage);
-      return;
+      if (session_id !== socket.params().session_id) {
+        BoldInteractions.handleActionMessage(incomingMessage);
+      }
+      if (BoldInteractions.hideChatActions) {
+        return;
+      }
     }
 
     if (scene.is("vr-mode")) {

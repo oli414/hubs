@@ -10,6 +10,8 @@ class BoldInteractions {
         this.actionsHistory = [];
         this.synced = false;
 
+        this.hideChatActions = true;
+
         this.registeredAnimationMixers = [];
 
         this.lastUpdate = Date.now();
@@ -32,10 +34,24 @@ class BoldInteractions {
         if (action.type == "set") {
             for (let i = 0; i < this.actionsHistory.length; i++) {
                 let a = this.actionsHistory[i];
-                if (a.data.field == action.data.field &&
-                    a.data.target == action.data.target) {
-                    a.data.value = action.data.value;
-                    return;
+                if (a.type == action.type) {
+                    if (a.data.field == action.data.field &&
+                        a.data.target == action.data.target) {
+                        a.data.value = action.data.value;
+                        return;
+                    }
+                }
+            }
+            this.actionsHistory.push(action);
+        }
+        else if (action.type == "toggle") {
+            for (let i = 0; i < this.actionsHistory.length; i++) {
+                let a = this.actionsHistory[i];
+                if (a.type == action.type) {
+                    if (a.data.identifier == action.data.identifier) {
+                        a.data.active = action.data.active;
+                        return;
+                    }
                 }
             }
             this.actionsHistory.push(action);
@@ -43,6 +59,18 @@ class BoldInteractions {
         else {
             this.actionsHistory.push(action);
         }
+    }
+
+    getToggle(toggleName) {
+        for (let i = 0; i < this.actionsHistory.length; i++) {
+            let a = this.actionsHistory[i];
+            if (a.type == "toggle") {
+                if (a.data.identifier == toggleName) {
+                    return a;
+                }
+            } 
+        }
+        return null;
     }
 
     findExtraChildren(parent) {
@@ -128,20 +156,7 @@ class BoldInteractions {
 
                 let actionFields = that.breakdownName(mdl);
                 comp.onClick = () => {
-                    if (mdl.el.components["loop-animation"]) {
-                        mdl.el.components["loop-animation"].currentActions[0].stop();
-                        mdl.el.components["loop-animation"].currentActions[0].setLoop(0, 1);
-                        mdl.el.components["loop-animation"].currentActions[0].play();
-                    }
-                    /*
-                    const clip = THREE.AnimationClip.findByName(clips, 'Press');
-                    if (clip) {
-                        const action = mixer.clipAction(clip);
-                        action.stop();
-                        action.setLoop(0, 1);
-                        action.play();
-                    }
-                    */
+                   that.dispatchAction("animate", { target: mdl.name });
 
                     if (actionFields.target) {
                         let target = that.findEntityByName(actionFields.target);
@@ -161,15 +176,31 @@ class BoldInteractions {
                                 }
                             }
                             else if (actionFields.action == "switch-play") {
-                                console.log("Inside: " + actionFields.action);
                                 if (mediaComponent) {
-                                    console.log("Mediacomp: " + actionFields.action);
-                                    mediaComponent.togglePlaying();
-                                    while (mediaComponent.video.currentTime > 0) {
-                                        mediaComponent.seekBack();
+                                    if (mediaComponent.video.paused) {
+                                        mediaComponent.togglePlaying();
+                                        while (mediaComponent.video.currentTime > 0) {
+                                            mediaComponent.seekBack();
+                                        }
                                     }
                                 }
-                                that.dispatchSet(actionFields.play, "visibility", !target.object3D.visible);
+                                let toggle = this.getToggle(actionFields.id);
+                                if (toggle) {
+                                    let previousTarget = that.findEntityByName(toggle.active);
+                                    if (previousTarget) {
+                                        if (previousTarget.components["media-video"]) {
+                                            if (!previousTarget.components["media-video"].video.paused) {
+                                                previousTarget.components["media-video"].togglePlaying();
+                                            }
+                                        }
+                                    }
+                                }
+                                if (toggle && toggle.data.active == actionFields.target) {
+                                    that.dispatchToggle(actionFields.id, "null");
+                                }
+                                else {
+                                    that.dispatchToggle(actionFields.id, actionFields.target);
+                                }
                             }
                         }
                         if (actionFields.action == "info") {
@@ -208,6 +239,7 @@ class BoldInteractions {
             data: data
         };
         this.sendMessage("*#@#*" + JSON.stringify(pckg));
+        this.onAction(type, data);
     }
 
     dispatchSet(target, field, value) {
@@ -215,6 +247,13 @@ class BoldInteractions {
             target: target,
             field: field,
             value: value
+        });
+    }
+
+    dispatchToggle(identifier, active) {
+        this.dispatchAction("toggle", {
+            identifier: identifier,
+            active: active
         });
     }
 
@@ -240,13 +279,37 @@ class BoldInteractions {
             console.log("Received action: " + type);
             if (type == "set") {
                 let target = this.findEntityByName(data.target);
-                console.log(target);
-                console.log(data.field);
-                console.log(data.value);
                 if (data.field = "visibility") {
-                    target.object3D.visible = data.value;
+                    target.object3D.visible = data.value == true;
                 }
             }
+            else if (type == "toggle") {
+                let toggle = this.getToggle(data.identifier);
+                console.log("toggle ID: " + data.identifier);
+                if (toggle) {
+                    console.log("active value: " + toggle.data.active);
+                    if (toggle.data.active != "null") {
+                        let target = this.findEntityByName(toggle.data.active);
+                        target.object3D.visible = false;
+                    }
+                }
+                if (data.active != "null") {
+                    let target = this.findEntityByName(data.active);
+                    target.object3D.visible = true;
+                }
+            }
+            else if (type == "animate") {
+                let target = this.findEntityByName(data.target);
+                if (target.components["loop-animation"]) {
+                    if (target.components["loop-animation"].currentActions[0]) {
+                        target.components["loop-animation"].currentActions[0].stop();
+                        target.components["loop-animation"].currentActions[0].setLoop(0, 1);
+                        target.components["loop-animation"].currentActions[0].play();
+                    }
+                }
+                return;
+            }
+
             this.appendToActionHistory({
                 type: type, 
                 data: data
