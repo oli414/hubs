@@ -245,6 +245,7 @@ function attachTemplate(root, name, templateRoot) {
     const root = templateRoot.cloneNode(true);
     // Merge root element attributes with the target element
     for (const { name, value } of root.attributes) {
+      console.log("TESTING123 ", name, value);
       el.setAttribute(name, value);
     }
 

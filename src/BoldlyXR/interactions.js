@@ -143,16 +143,9 @@ class BoldInteractions {
                 mdl.el.setAttribute("is-remote-hover-target", "");
                 AFRAME.scenes[0].systems["hubs-systems"].cursorTargettingSystem.targets.push(comp.el);
 
-                //if (mdl.name.includes("2")) {
-                if (mdl.el.components["loop-animation"]) {
+                if (mdl.el.components["loop-animation"]) { 
                     mdl.el.components["loop-animation"].currentActions[0].stop();
                 }
-                //}
-                /*
-                const mixer = new THREE.AnimationMixer(mdl);
-                const clips = mdl.animations;
-                this.registeredAnimationMixers.push(mixer);
-                */
 
                 let actionFields = that.breakdownName(mdl);
                 comp.onClick = () => {
@@ -177,20 +170,28 @@ class BoldInteractions {
                             }
                             else if (actionFields.action == "switch-play") {
                                 if (mediaComponent) {
-                                    if (mediaComponent.video.paused) {
-                                        mediaComponent.togglePlaying();
-                                        while (mediaComponent.video.currentTime > 0) {
-                                            mediaComponent.seekBack();
+                                    if (mediaComponent.video) {
+                                        if (mediaComponent.video.paused) {
+                                            mediaComponent.togglePlaying();
+                                            while (mediaComponent.video.currentTime > 0) {
+                                                mediaComponent.seekBack();
+                                            }
                                         }
                                     }
                                 }
                                 let toggle = this.getToggle(actionFields.id);
                                 if (toggle) {
-                                    let previousTarget = that.findEntityByName(toggle.active);
-                                    if (previousTarget) {
-                                        if (previousTarget.components["media-video"]) {
-                                            if (!previousTarget.components["media-video"].video.paused) {
-                                                previousTarget.components["media-video"].togglePlaying();
+                                    if (toggle.data.active != "null") {
+                                        let previousTarget = that.findEntityByName(toggle.data.active);
+                                        if (previousTarget) {
+                                            console.log("Previous target exists " + toggle.active);
+                                            if (previousTarget.components["media-video"]) {
+                                                if (previousTarget.components["media-video"].video) {
+                                                    if (!previousTarget.components["media-video"].video.paused) {
+                                                        console.log("Pausing: " + toggle.active);
+                                                        previousTarget.components["media-video"].togglePlaying();
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -199,6 +200,7 @@ class BoldInteractions {
                                     that.dispatchToggle(actionFields.id, "null");
                                 }
                                 else {
+                                    console.log("TARGET ON DISPATCH IS: " + actionFields.target);
                                     that.dispatchToggle(actionFields.id, actionFields.target);
                                 }
                             }
@@ -285,9 +287,7 @@ class BoldInteractions {
             }
             else if (type == "toggle") {
                 let toggle = this.getToggle(data.identifier);
-                console.log("toggle ID: " + data.identifier);
                 if (toggle) {
-                    console.log("active value: " + toggle.data.active);
                     if (toggle.data.active != "null") {
                         let target = this.findEntityByName(toggle.data.active);
                         target.object3D.visible = false;
@@ -299,12 +299,16 @@ class BoldInteractions {
                 }
             }
             else if (type == "animate") {
+                console.log("Animate");
                 let target = this.findEntityByName(data.target);
                 if (target.components["loop-animation"]) {
+                    console.log("Animate 2");
                     if (target.components["loop-animation"].currentActions[0]) {
+                        console.log("Animate 3");
                         target.components["loop-animation"].currentActions[0].stop();
                         target.components["loop-animation"].currentActions[0].setLoop(0, 1);
                         target.components["loop-animation"].currentActions[0].play();
+                        console.log(target.components["loop-animation"].currentActions);
                     }
                 }
                 return;
