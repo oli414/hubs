@@ -70,6 +70,7 @@ export const SCHEMA = {
         preferredCamera: { type: "string" },
         muteMicOnEntry: { type: "bool" },
         audioOutputMode: { type: "string" },
+        audioNormalization: { type: "bool" },
         invertTouchscreenCameraMove: { type: "bool" },
         enableOnScreenJoystickLeft: { type: "bool" },
         enableOnScreenJoystickRight: { type: "bool" },
@@ -316,6 +317,8 @@ export default class Store extends EventTarget {
     if (!valid) {
       // Intentionally not including details about the state or validation result here, since we don't want to leak
       // sensitive data in the error message.
+      const obj = validator.validate(finalState, SCHEMA);
+      console.log(obj);
       throw new Error(`Write to store failed schema validation.`);
     }
 

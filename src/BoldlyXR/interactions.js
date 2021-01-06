@@ -1,14 +1,17 @@
+import { Euler } from "three";
 import {
     isIn2DInterstitial,
     handleExitTo2DInterstitial,
     exit2DInterstitialAndEnterVR,
     forceExitFrom2DInterstitial
   } from "../utils/vr-interstitial";
+  import { pushHistoryState } from "../utils/history";
 
 class BoldInteractions {
     constructor() {
         this.actionsHistory = [];
         this.synced = false;
+        this.localStore = {};
 
         this.hideChatActions = true;
 
@@ -16,13 +19,15 @@ class BoldInteractions {
 
         this.lastUpdate = Date.now();
         this.tick();
+
+        this.infoPanelUrl = "";
     }
 
     tick() {
         var now = Date.now();
         var dt = (now - this.lastUpdate) / 1000;
         this.lastUpdate = now;
-            
+        
         for (let i = 0; i < this.registeredAnimationMixers.length; i++) {
             this.registeredAnimationMixers[i].update(dt);
         }
@@ -35,10 +40,18 @@ class BoldInteractions {
             for (let i = 0; i < this.actionsHistory.length; i++) {
                 let a = this.actionsHistory[i];
                 if (a.type == action.type) {
-                    if (a.data.field == action.data.field &&
-                        a.data.target == action.data.target) {
-                        a.data.value = action.data.value;
-                        return;
+                    if (a.data.target) {
+                        if (a.data.field == action.data.field &&
+                            a.data.target == action.data.target) {
+                            a.data.value = action.data.value;
+                            return;
+                        }
+                    }
+                    else {
+                        if (a.data.field == action.data.field) {
+                            a.data.value = action.data.value;
+                            return;
+                        }
                     }
                 }
             }
@@ -131,13 +144,19 @@ class BoldInteractions {
       return out;
     }
 
+    radiansToDegrees(radians) {
+        return radians * 57.2957795;
+    }
+
     setupModelClickAction(comp) {
         let that = this;
         comp.el.addEventListener("model-loaded", (data) => {
-            console.log("MODEL LOADED");
             let models = that.findExtraChildren(comp.el.object3D);
             for (let i = 0; i < models.length; i++) {
                 let mdl = models[i];
+                let actionFields = that.breakdownName(mdl);
+                mdl.actionFields = actionFields;
+
                 mdl.el.classList.add("interactable");
                 mdl.el.setAttribute("tags", "singleActionButton: true");
                 mdl.el.setAttribute("is-remote-hover-target", "");
@@ -146,10 +165,32 @@ class BoldInteractions {
                 if (mdl.el.components["loop-animation"]) { 
                     mdl.el.components["loop-animation"].currentActions[0].stop();
                 }
+                
+                let baseRotation = new THREE.Quaternion();
+                baseRotation.setFromEuler(mdl.rotation);
+                actionFields.baseRotation = baseRotation;
+                actionFields.rotationStep = 0;
+                if (actionFields.range && actionFields.steps && mdl.type == "Group") {
+                    let up = new THREE.Vector3(0, 1, 0);
+                    up.applyQuaternion(baseRotation);
+                    let turnAngle = actionFields.range / 2;
+                    let quaternion = new THREE.Quaternion().setFromAxisAngle(up, turnAngle * 0.0174532925);
+                    let euler = new THREE.Euler().setFromQuaternion(quaternion.multiply(baseRotation), "YXZ");
+                    mdl.el.setAttribute("rotation", that.radiansToDegrees(euler.x) + " " + that.radiansToDegrees(euler.y) + " " + that.radiansToDegrees(euler.z));
+                }
 
-                let actionFields = that.breakdownName(mdl);
                 comp.onClick = () => {
-                   that.dispatchAction("animate", { target: mdl.name });
+                    if (mdl.el.components["loop-animation"]) { 
+                        that.dispatchAction("animate", { target: mdl.name });
+                    }
+
+                    if (actionFields.range && actionFields.steps && mdl.type == "Group") {
+                        actionFields.rotationStep++;
+                        if (actionFields.rotationStep >= actionFields.steps) {
+                            actionFields.rotationStep = 0;
+                        }
+                        that.dispatchSet(mdl.name, "knob", actionFields.rotationStep);
+                    }
 
                     if (actionFields.target) {
                         let target = that.findEntityByName(actionFields.target);
@@ -184,11 +225,9 @@ class BoldInteractions {
                                     if (toggle.data.active != "null") {
                                         let previousTarget = that.findEntityByName(toggle.data.active);
                                         if (previousTarget) {
-                                            console.log("Previous target exists " + toggle.active);
                                             if (previousTarget.components["media-video"]) {
                                                 if (previousTarget.components["media-video"].video) {
                                                     if (!previousTarget.components["media-video"].video.paused) {
-                                                        console.log("Pausing: " + toggle.active);
                                                         previousTarget.components["media-video"].togglePlaying();
                                                     }
                                                 }
@@ -200,14 +239,25 @@ class BoldInteractions {
                                     that.dispatchToggle(actionFields.id, "null");
                                 }
                                 else {
-                                    console.log("TARGET ON DISPATCH IS: " + actionFields.target);
                                     that.dispatchToggle(actionFields.id, actionFields.target);
                                 }
                             }
+                            else if (actionFields.action == "teleport") {
+                                console.log("teleport");
+                                console.log(target);
+                                console.log(target.components);
+                                console.log(AFRAME.scenes[0].systems["hubs-systems"].waypointSystem);
+                                AFRAME.scenes[0].systems["hubs-systems"].waypointSystem.teleportToWaypoint(target, target.components["waypoint"])();
+                            }
                         }
-                        if (actionFields.action == "info") {
-                            that.openInfoPanel();
-                        }
+                    }
+
+                    if (actionFields.action == "event") {
+                        that.dispatchAction("event", actionFields);
+                    }
+
+                    if (actionFields.action == "info") {
+                        that.openInfoPanel(actionFields.url);
                     }
                 };
                 mdl.addEventListener("interact", comp.onClick);
@@ -231,7 +281,7 @@ class BoldInteractions {
         if (msg.body.startsWith("*#@#*")) {
             let strAction = msg.body.substring(5);
             let obj = JSON.parse(strAction);
-            this.onAction(obj.type, obj.data);
+            this.onAction(obj.type, obj.data, true);
         }
     }
 
@@ -241,7 +291,21 @@ class BoldInteractions {
             data: data
         };
         this.sendMessage("*#@#*" + JSON.stringify(pckg));
-        this.onAction(type, data);
+        this.onAction(type, data, false);
+    }
+
+    dispatchGlobalSet(field, value) {
+        this.dispatchAction("set", {
+            field: field,
+            value: value
+        });
+    }
+
+    globalGet(field) {
+        if (this.localStore[field] !== undefined) {
+            return this.localStore[field];
+        }
+        return undefined;
     }
 
     dispatchSet(target, field, value) {
@@ -259,7 +323,7 @@ class BoldInteractions {
         });
     }
 
-    onAction(type, data) {
+    onAction(type, data, isSecondHand = false) {
         if (type == "sync" && !this.synced) {
             if (this.actionsHistory.length == 0 && this.actionsHistory.length < data.length) {
                 type = "multi";
@@ -274,15 +338,50 @@ class BoldInteractions {
         }
         if (type == "multi") {
             for (let i = 0; i < data.length; i++) {
-                this.onAction(data[i].type, data[i].data);
+                this.onAction(data[i].type, data[i].data, isSecondHand);
             }
         }
         else {
-            console.log("Received action: " + type);
             if (type == "set") {
-                let target = this.findEntityByName(data.target);
-                if (data.field = "visibility") {
-                    target.object3D.visible = data.value == true;
+                if (data.target) {
+                    let target = this.findEntityByName(data.target);
+                    if (target) {
+                        if (data.field == "visibility") {
+                            target.object3D.visible = data.value == true;
+                        }
+                        if (data.field == "knob") {
+                            let mdl = target.object3D;
+                            let actionFields = mdl.actionFields;
+                            actionFields.rotationStep = Number(data.value);
+                            let up = new THREE.Vector3(0, 1, 0);
+                            up.applyQuaternion(actionFields.baseRotation);
+                            let turnAngle = actionFields.range / 2;
+                            turnAngle -= actionFields.range / (actionFields.steps - 1) * actionFields.rotationStep;
+                            let quaternion = new THREE.Quaternion().setFromAxisAngle(up, turnAngle * 0.0174532925);
+                            let euler = new THREE.Euler().setFromQuaternion(quaternion.multiply(actionFields.baseRotation), "YXZ");
+                            mdl.el.setAttribute("rotation", this.radiansToDegrees(euler.x) + " " + this.radiansToDegrees(euler.y) + " " + this.radiansToDegrees(euler.z));
+
+                            /*
+                            if (actionFields.action == "event") {
+                                let eventName = actionFields.event;
+                                target.dispatchEvent(new CustomEvent(eventName, { detail: {data: actionFields, isSecondHand: isSecondHand } }));
+                            }*/
+                        }
+                    }
+                }
+                else {
+                    // Global synced variable
+                    this.localStore[data.field] = data.value;
+                }
+            }
+            else if (type == "event") {
+                let eventName = data.event;
+                if (data.target) {
+                    let target = that.findEntityByName(data.target);
+                    target.dispatchEvent(new CustomEvent(eventName, { detail: {data: data, isSecondHand: isSecondHand } }));
+                }
+                else {
+                    window.dispatchEvent(new CustomEvent(eventName, { detail: {data: data, isSecondHand: isSecondHand } }));
                 }
             }
             else if (type == "toggle") {
@@ -299,16 +398,12 @@ class BoldInteractions {
                 }
             }
             else if (type == "animate") {
-                console.log("Animate");
                 let target = this.findEntityByName(data.target);
                 if (target.components["loop-animation"]) {
-                    console.log("Animate 2");
                     if (target.components["loop-animation"].currentActions[0]) {
-                        console.log("Animate 3");
                         target.components["loop-animation"].currentActions[0].stop();
                         target.components["loop-animation"].currentActions[0].setLoop(0, 1);
                         target.components["loop-animation"].currentActions[0].play();
-                        console.log(target.components["loop-animation"].currentActions);
                     }
                 }
                 return;
@@ -327,9 +422,10 @@ class BoldInteractions {
         }
     }
 
-    openInfoPanel() {
+    openInfoPanel(url) {
         handleExitTo2DInterstitial();
-        window.UIRootInstance.pushHistoryState("modal", "boldly_info_panel");
+        this.infoPanelUrl = url;
+        window.UIRootInstance.pushHistoryState("modal", "boldly-info-panel");
     }
 }
 

@@ -3,17 +3,20 @@ import PropTypes from "prop-types";
 import { injectIntl, FormattedMessage } from "react-intl";
 
 import DialogContainer from "../react-components/dialog-container.js";
-import styles from "../assets/stylesheets/room-info-dialog.scss";
+import styles from "./info-panel.scss";
 import { scaledThumbnailUrlFor } from "../utils/media-url-utils";
 import { allowDisplayOfSceneLink } from "../utils/scene-url-utils";
 
 class InfoPanel extends Component {
     render() {
+        let url = window.BoldInteractions.url;
+        url = "https://www.vectary.com/viewer/v1/?model=20f4eacd-2b99-4d24-ab09-ec416dcf6eda&env=studio3";
         return (
-        <DialogContainer wide={true} title="" {...this.props}>
+        <DialogContainer wide={true} title="" className={styles.infoPanel} {...this.props}>
             <iframe
+            id="20f4eacd-2b99-4d24-ab09-ec416dcf6eda"
             className={styles.formFrame}
-            src="https://www.youtube.com/embed/CC5ca6Hsb2Q"
+            src={url}
             frameBorder="0"
             marginHeight="0"
             marginWidth="0"

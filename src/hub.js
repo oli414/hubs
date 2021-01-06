@@ -164,6 +164,7 @@ import "./gltf-component-mappings";
 
 // oli414
 import BoldInteractions from "./BoldlyXR/interactions.js";
+import BoldGame from "./BoldlyXR/game.js";
 
 import { App } from "./App";
 import { platformUnsupported } from "./support";
