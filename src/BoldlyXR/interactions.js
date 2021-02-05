@@ -74,6 +74,25 @@ class BoldInteractions {
         }
     }
 
+    setToggle(toggleName, value) {
+        for (let i = 0; i < this.actionsHistory.length; i++) {
+            let a = this.actionsHistory[i];
+            if (a.type == "toggle") {
+                if (a.data.identifier == toggleName) {
+                    a.data.active = value;
+                    return;
+                }
+            } 
+        }
+        this.actionsHistory.push({
+            type: "toggle",
+            data: {
+                identifier: toggleName,
+                active: value
+            }
+        })
+    }
+
     getToggle(toggleName) {
         for (let i = 0; i < this.actionsHistory.length; i++) {
             let a = this.actionsHistory[i];
@@ -178,6 +197,14 @@ class BoldInteractions {
                     let euler = new THREE.Euler().setFromQuaternion(quaternion.multiply(baseRotation), "YXZ");
                     mdl.el.setAttribute("rotation", that.radiansToDegrees(euler.x) + " " + that.radiansToDegrees(euler.y) + " " + that.radiansToDegrees(euler.z));
                 }
+                
+                if (actionFields.action == "switch-play") {
+                    if (actionFields.target) {
+                        if (actionFields.default) {
+                            this.setToggle(actionFields.id, actionFields.target);
+                        }
+                    }
+                }
 
                 comp.onClick = () => {
                     if (mdl.el.components["loop-animation"]) { 
@@ -257,7 +284,7 @@ class BoldInteractions {
                     }
 
                     if (actionFields.action == "info") {
-                        that.openInfoPanel(actionFields.url);
+                        that.openInfoPanel(actionFields.url, actionFields.type, actionFields.ext);
                     }
                 };
                 mdl.addEventListener("interact", comp.onClick);
@@ -422,9 +449,17 @@ class BoldInteractions {
         }
     }
 
-    openInfoPanel(url) {
+    openInfoPanel(url, type, ext) {
         handleExitTo2DInterstitial();
-        this.infoPanelUrl = url;
+        if (type == "tour") {
+            this.infoPanelUrl = "https://boldlyxr-development.nl/kohler/hubs/tours/" + url + "/";
+        }
+        else if (type == "file") {
+            this.infoPanelUrl = "https://vr-kohler-1-assets.vr-kohler.com/hubs/assets/custom/file/" + ext + "/" + url + "." + ext;
+        }
+        else {
+            this.infoPanelUrl = "https://vr-kohler-1-assets.vr-kohler.com/hubs/assets/custom/" + type + "/" + url + "/";
+        }
         window.UIRootInstance.pushHistoryState("modal", "boldly-info-panel");
     }
 }

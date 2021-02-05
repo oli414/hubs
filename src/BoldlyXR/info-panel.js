@@ -9,8 +9,7 @@ import { allowDisplayOfSceneLink } from "../utils/scene-url-utils";
 
 class InfoPanel extends Component {
     render() {
-        let url = window.BoldInteractions.url;
-        url = "https://www.vectary.com/viewer/v1/?model=20f4eacd-2b99-4d24-ab09-ec416dcf6eda&env=studio3";
+        let url = window.BoldInteractions.infoPanelUrl;
         return (
         <DialogContainer wide={true} title="" className={styles.infoPanel} {...this.props}>
             <iframe

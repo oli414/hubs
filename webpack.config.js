@@ -570,6 +570,12 @@ module.exports = async (env, argv) => {
           to: "schema.toml"
         }
       ]),
+      new CopyWebpackPlugin([
+        {
+          from: "custom_assets",
+          to: "assets/custom"
+        }
+      ]),
       // Extract required css and add a content hash.
       new MiniCssExtractPlugin({
         filename: "assets/stylesheets/[name]-[contenthash].css",

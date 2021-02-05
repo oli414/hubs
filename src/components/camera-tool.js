@@ -108,7 +108,7 @@ AFRAME.registerComponent("camera-tool", {
       stencil: false
     });
 
-    this.camera = new THREE.PerspectiveCamera(50, RENDER_WIDTH / RENDER_HEIGHT, 0.1, 30000);
+    this.camera = new THREE.PerspectiveCamera(45, RENDER_WIDTH / RENDER_HEIGHT, 0.1, 30000);
     this.camera.rotation.set(0, Math.PI, 0);
     this.camera.position.set(0, 0, 0.05);
     this.camera.matrixNeedsUpdate = true;

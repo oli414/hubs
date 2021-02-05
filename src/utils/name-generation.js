@@ -48,7 +48,7 @@ const adjectives = [
   "BGF",
   "ZTV",
   "YDX",
-  "PGT"
+  "PGT" 
 ];
 
 const nouns = [
@@ -102,7 +102,7 @@ const nouns = [
 "531",
 "551",
 "354"
-];
+]; 
 
 export function generateHubName() {
   const randItem = set => {
