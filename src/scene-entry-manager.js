@@ -70,6 +70,9 @@ export default class SceneEntryManager {
 
       await exit2DInterstitialAndEnterVR(true);
     }
+    
+    // oli414
+    window.BoldInteractions.hasJoined = true;
 
     const waypointSystem = this.scene.systems["hubs-systems"].waypointSystem;
     waypointSystem.moveToSpawnPoint();

@@ -438,6 +438,8 @@ async function updateEnvironmentForHub(hub, entryManager) {
             // We've already entered, so move to new spawn point once new environment is loaded
             if (sceneEl.is("entered")) {
               waypointSystem.moveToSpawnPoint();
+              // oli414
+              window.BoldInteractions.hasJoined = true;
             }
 
             const fader = document.getElementById("viewing-camera").components["fader"];
@@ -1471,6 +1473,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           track = stream.getAudioTracks()[0];
         }
 
+        // oli414
+        window.BoldInteractions.setClientId(socket.params().session_id);
+
         adapter.setClientId(socket.params().session_id);
         adapter.setJoinToken(data.perms_token);
         setupPeerConnectionConfig(adapter, janusHost, janusTurn);
@@ -1635,6 +1640,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   hubPhxChannel.on("permissions_updated", () => hubChannel.fetchPermissions());
 
   hubPhxChannel.on("mute", ({ session_id }) => {
+    console.log("Mute action gotten");
     if (session_id === NAF.clientId && !scene.is("muted")) {
       scene.emit("action_mute");
     }

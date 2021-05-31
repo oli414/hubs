@@ -30,6 +30,8 @@ class InWorldChatBox extends Component {
 
   sendMessage = e => {
     e.preventDefault();
+    // oli414
+    window.BoldInteractions.checkChatSend(this.state.pendingMessage);
     if (this.props.onSendMessage) {
       this.props.onSendMessage(this.state.pendingMessage);
     }

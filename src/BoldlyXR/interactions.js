@@ -12,15 +12,68 @@ class BoldInteractions {
         this.actionsHistory = [];
         this.synced = false;
         this.localStore = {};
+        
+        this.hasJoined = false;
+
+        this.clientId = null;
+
+        this.lastWaypoint = "";
+
+        this.muteLocked = false;
+
+        this.previousPlay = null;
 
         this.hideChatActions = true;
 
         this.registeredAnimationMixers = [];
 
+        this.teleportLocations = [];
+
+        this.triggerSpots = [];
+
+        this.codePanelText = "";
+        this.codePanelCode = "";
+        this.codePanelResultAction = "";
+        this.codePanelResultData = {};
+        this.codePanelObj = null;
+
         this.lastUpdate = Date.now();
         this.tick();
 
         this.infoPanelUrl = "";
+
+        this.finishedCode = false;
+        this.finishedSit = false;
+        this.finishedShare = false;
+    }
+
+    registerWaypoint(el) {
+        let identifier = "TPLoc_";
+        let className = el.className;
+        if (className.startsWith(identifier)) {
+            console.log(el.object3D);
+            let name = className.replace(identifier, "");
+            name = name.replace("_", " ");
+            this.teleportLocations.push({
+                title: name,
+                name: el.object3D.name
+            });
+        }
+    }
+
+    teleportAll() {
+        this.dispatchAction("teleport", {matrixWorld: AFRAME.scenes[0].systems["hubs-systems"].characterController.avatarRig.object3D.matrixWorld}, false);
+    }
+
+    setMuteLock(lock) {
+        if (lock && window.APP.hubChannel.can("mute_users"))
+            return;
+        this.muteLocked = lock;
+    }
+
+    setClientId(id) {
+        console.log(id + " client id has been set");
+        this.clientId = id;
     }
 
     tick() {
@@ -30,6 +83,41 @@ class BoldInteractions {
         
         for (let i = 0; i < this.registeredAnimationMixers.length; i++) {
             this.registeredAnimationMixers[i].update(dt);
+        }
+
+        if (AFRAME.scenes[0] && this.hasJoined) {
+            let playerPos = new THREE.Vector3();
+            AFRAME.scenes[0].systems["hubs-systems"].characterController.avatarRig.object3D.getWorldPosition(playerPos);
+
+            for (let i = 0; i < this.triggerSpots.length; i++) {
+                if (!this.triggerSpots[i].active) {
+                    continue;
+                }
+
+                let obj3d = this.triggerSpots[i].mdl;
+                let worldPosObj = new THREE.Vector3();
+                obj3d.getWorldPosition(worldPosObj);
+
+                if (worldPosObj.distanceTo(playerPos) < obj3d.scale.x) {
+                    this.triggerSpots[i].colliding = true;
+                }
+                else {
+                    this.triggerSpots[i].colliding = false;
+                }
+
+                if (!this.triggerSpots[i].collidingPrevious && this.triggerSpots[i].colliding) {
+                    console.log("Entering collider");
+                    if (this.triggerSpots[i].singleUse) {
+                        this.triggerSpots[i].active = false;
+                    }
+                    this.triggerSpots[i].onCollide();
+                }
+                if (this.triggerSpots[i].collidingPrevious && !this.triggerSpots[i].colliding) {
+                    console.log("Leaving collider");
+                }
+                
+                this.triggerSpots[i].collidingPrevious = this.triggerSpots[i].colliding;
+            }
         }
 
         window.requestAnimationFrame(this.tick.bind(this));
@@ -128,10 +216,10 @@ class BoldInteractions {
         let children = parent.querySelectorAll(":scope > a-entity"); // Immediate children
         for (let i = 0; i < children.length; i++) {
           const c = children[i];
-          if (c.name == name) {
+          if (c && c.name && (c.name == name || (c.name.startsWith && c.name.startsWith(name + "{")))) {
             return c;
           }
-          else if (c.object3D && c.object3D.name == name) {
+          else if (c && c.object3D && c.object3D.name && (c.object3D.name == name || (c.object3D.name.startsWith && c.object3D.name.startsWith(name + "{")))) {
             return c;
           }
         }
@@ -143,6 +231,34 @@ class BoldInteractions {
           }
         }
         return null;
+    }
+
+    findEntitiesByName(name) {
+        let root = document.getElementById("environment-scene");
+        let res = this.findChildrenByName(root, name);
+        return res;
+    }
+  
+    findChildrenByName(parent, name) {
+        let children = parent.querySelectorAll(":scope > a-entity"); // Immediate children
+        let found = [];
+        for (let i = 0; i < children.length; i++) {
+          const c = children[i];
+          if (c && c.name && (c.name == name || (c.name.startsWith && c.name.startsWith(name + "{")))) {
+            found.push(c);
+          }
+          else if (c && c.object3D && c.object3D.name && (c.object3D.name == name || (c.object3D.name.startsWith && c.object3D.name.startsWith(name + "{")))) {
+            found.push(c);
+          }
+        }
+        for (let i = 0; i < children.length; i++) {
+          const c = children[i];
+          const r = this.findChildrenByName(c, name);
+          if (r !== null) {
+            found = found.concat(r);
+          }
+        }
+        return found;
     }
 
     breakdownName(obj) {
@@ -167,13 +283,187 @@ class BoldInteractions {
         return radians * 57.2957795;
     }
 
+    performInteraction(object3D, actionFields) {
+        let that = this;
+        if (object3D.el) {
+            if (object3D.el.components["loop-animation"]) { 
+                that.dispatchAction("animate", { target: object3D.name });
+            }
+        }
+
+        if (actionFields.range && actionFields.steps && object3D.type == "Group") {
+            actionFields.rotationStep++;
+            if (actionFields.rotationStep >= actionFields.steps) {
+                actionFields.rotationStep = 0;
+            }
+            that.dispatchSet(object3D.name, "knob", actionFields.rotationStep);
+        }
+
+        if (actionFields.target) {
+            let target = that.findEntityByName(actionFields.target);
+
+            if (actionFields.action == "click") {
+                console.log("Click");
+                let children = that.findEntitiesByName(actionFields.target)
+                console.log(children);
+                for (let i = 0; i < children.length; i++) {
+                    let externalActionFields = that.breakdownName(children[i].object3D);
+                    console.log(externalActionFields);
+                    that.performInteraction(children[i].object3D, externalActionFields);
+                }
+            }
+
+            if (target) {
+                let mediaComponent = null;
+                if (target.components["media-video"]) {
+                    mediaComponent = target.components["media-video"];
+                }
+
+                if (actionFields.action == "hide") {
+                    that.dispatchSet(actionFields.target, "visibility", false);
+                }
+                else if (actionFields.action == "show") {
+                    that.dispatchSet(actionFields.target, "visibility", true);
+                }
+                else if (actionFields.action == "toggle") {
+                    that.dispatchSet(actionFields.target, "visibility", !target.object3D.visible);
+                }
+                else if (actionFields.action == "play") {
+                    if (mediaComponent) {
+                        mediaComponent.togglePlaying();
+                        while (mediaComponent.video.currentTime > 0) {
+                            mediaComponent.seekBack();
+                        }
+                    }
+                }
+                else if (actionFields.action == "start-play") {
+                    if (mediaComponent) {
+                        if (mediaComponent.video.paused) {
+                            if (that.previousPlay) {
+                                if (!that.previousPlay.video.paused) {
+                                    that.previousPlay.togglePlaying();
+                                    while (that.previousPlay.video.currentTime > 0) {
+                                        that.previousPlay.seekBack();
+                                    }
+                                }
+                            }
+                            mediaComponent.togglePlaying();
+                            while (mediaComponent.video.currentTime > 0) {
+                                mediaComponent.seekBack();
+                            }
+                            that.previousPlay = mediaComponent;
+                        }
+                    }
+                }
+                else if (actionFields.action == "switch-play") {
+                    if (mediaComponent) {
+                        if (mediaComponent.video) {
+                            if (mediaComponent.video.paused) {
+                                mediaComponent.togglePlaying();
+                                while (mediaComponent.video.currentTime > 0) {
+                                    mediaComponent.seekBack();
+                                }
+                            }
+                        }
+                    }
+                    let toggle = this.getToggle(actionFields.id);
+                    if (toggle) {
+                        if (toggle.data.active != "null") {
+                            let previousTarget = that.findEntityByName(toggle.data.active);
+                            if (previousTarget) {
+                                if (previousTarget.components["media-video"]) {
+                                    if (previousTarget.components["media-video"].video) {
+                                        if (!previousTarget.components["media-video"].video.paused) {
+                                            previousTarget.components["media-video"].togglePlaying();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (toggle && toggle.data.active == actionFields.target) {
+                        that.dispatchToggle(actionFields.id, "null");
+                    }
+                    else {
+                        that.dispatchToggle(actionFields.id, actionFields.target);
+                    }
+                }
+                else if (actionFields.action == "teleport") {
+                    console.log("teleport");
+                    console.log(target);
+                    console.log(target.components);
+                    console.log(AFRAME.scenes[0].systems["hubs-systems"].waypointSystem);
+                    AFRAME.scenes[0].systems["hubs-systems"].waypointSystem.teleportToWaypoint(null, target.components["waypoint"])();
+                }
+            }
+        }
+
+        if (actionFields.action == "event") {
+            that.dispatchAction("event", actionFields);
+        }
+
+        if (actionFields.action == "info") {
+            that.openInfoPanel(actionFields.url, actionFields.type, actionFields.ext);
+        }
+
+        if (actionFields.action == "code") {
+            that.openCodePanel(actionFields.text.replaceAll("_", " "), actionFields.code, actionFields.resaction, actionFields, object3D);
+        }
+    }
+
+    setupTriggerVolume(comp) {
+        let that = this;
+        let mdl = comp.el.object3D;
+        let actionFields = that.breakdownName(mdl);
+
+
+        if (actionFields) {
+            console.log("Setup trigger volume");
+            comp.onBoldCollide = () => {
+                console.log("Bold collision");
+                that.performInteraction(mdl, actionFields);
+            };
+        }
+    }
+
     setupModelClickAction(comp) {
         let that = this;
         comp.el.addEventListener("model-loaded", (data) => {
             let models = that.findExtraChildren(comp.el.object3D);
             for (let i = 0; i < models.length; i++) {
                 let mdl = models[i];
+
                 let actionFields = that.breakdownName(mdl);
+                if (actionFields == null) {
+                    continue;
+                }
+                
+                if (mdl.name.startsWith("trigger_")) {
+                    console.log("Registering Trigger");
+                    let collisionTrigger = {};
+                    collisionTrigger.collidingPrevious = false;
+                    collisionTrigger.colliding = false;
+                    collisionTrigger.onCollide = () => {
+                        that.performInteraction(mdl, actionFields);
+                    };
+                    collisionTrigger.mdl = mdl;
+                    collisionTrigger.active = true;
+                    collisionTrigger.singleUse = false;
+                    if (mdl.name.startsWith("trigger_single_")) {
+                        collisionTrigger.singleUse = true;
+                    }
+                    that.triggerSpots.push(collisionTrigger);
+                    continue;
+                }
+
+                if (mdl.name != mdl.el.object3D.name) {
+                    continue;
+                }
+
+                if (actionFields.noclick) {
+                    continue;
+                }
+
                 mdl.actionFields = actionFields;
 
                 mdl.el.classList.add("interactable");
@@ -207,85 +497,7 @@ class BoldInteractions {
                 }
 
                 comp.onClick = () => {
-                    if (mdl.el.components["loop-animation"]) { 
-                        that.dispatchAction("animate", { target: mdl.name });
-                    }
-
-                    if (actionFields.range && actionFields.steps && mdl.type == "Group") {
-                        actionFields.rotationStep++;
-                        if (actionFields.rotationStep >= actionFields.steps) {
-                            actionFields.rotationStep = 0;
-                        }
-                        that.dispatchSet(mdl.name, "knob", actionFields.rotationStep);
-                    }
-
-                    if (actionFields.target) {
-                        let target = that.findEntityByName(actionFields.target);
-
-                        if (target) {
-                            let mediaComponent = null;
-                            if (target.components["media-video"]) {
-                                mediaComponent = target.components["media-video"];
-                            }
-
-                            if (actionFields.action == "play") {
-                                if (mediaComponent) {
-                                    mediaComponent.togglePlaying();
-                                    while (mediaComponent.video.currentTime > 0) {
-                                        mediaComponent.seekBack();
-                                    }
-                                }
-                            }
-                            else if (actionFields.action == "switch-play") {
-                                if (mediaComponent) {
-                                    if (mediaComponent.video) {
-                                        if (mediaComponent.video.paused) {
-                                            mediaComponent.togglePlaying();
-                                            while (mediaComponent.video.currentTime > 0) {
-                                                mediaComponent.seekBack();
-                                            }
-                                        }
-                                    }
-                                }
-                                let toggle = this.getToggle(actionFields.id);
-                                if (toggle) {
-                                    if (toggle.data.active != "null") {
-                                        let previousTarget = that.findEntityByName(toggle.data.active);
-                                        if (previousTarget) {
-                                            if (previousTarget.components["media-video"]) {
-                                                if (previousTarget.components["media-video"].video) {
-                                                    if (!previousTarget.components["media-video"].video.paused) {
-                                                        previousTarget.components["media-video"].togglePlaying();
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                if (toggle && toggle.data.active == actionFields.target) {
-                                    that.dispatchToggle(actionFields.id, "null");
-                                }
-                                else {
-                                    that.dispatchToggle(actionFields.id, actionFields.target);
-                                }
-                            }
-                            else if (actionFields.action == "teleport") {
-                                console.log("teleport");
-                                console.log(target);
-                                console.log(target.components);
-                                console.log(AFRAME.scenes[0].systems["hubs-systems"].waypointSystem);
-                                AFRAME.scenes[0].systems["hubs-systems"].waypointSystem.teleportToWaypoint(target, target.components["waypoint"])();
-                            }
-                        }
-                    }
-
-                    if (actionFields.action == "event") {
-                        that.dispatchAction("event", actionFields);
-                    }
-
-                    if (actionFields.action == "info") {
-                        that.openInfoPanel(actionFields.url, actionFields.type, actionFields.ext);
-                    }
+                    that.performInteraction(mdl, actionFields);
                 };
                 mdl.addEventListener("interact", comp.onClick);
             }
@@ -312,13 +524,15 @@ class BoldInteractions {
         }
     }
 
-    dispatchAction(type, data) {
+    dispatchAction(type, data, toSelf = true) {
         let pckg = {
             type: type,
             data: data
         };
         this.sendMessage("*#@#*" + JSON.stringify(pckg));
-        this.onAction(type, data, false);
+        if (toSelf) {
+            this.onAction(type, data, false);
+        }
     }
 
     dispatchGlobalSet(field, value) {
@@ -351,6 +565,7 @@ class BoldInteractions {
     }
 
     onAction(type, data, isSecondHand = false) {
+        let initiallySynced = this.synced;
         if (type == "sync" && !this.synced) {
             if (this.actionsHistory.length == 0 && this.actionsHistory.length < data.length) {
                 type = "multi";
@@ -435,11 +650,52 @@ class BoldInteractions {
                 }
                 return;
             }
+            else if (type == "unmute") {
+                if (data.target == "__all__" || data.target == this.clientId) {
+                    this.setMuteLock(false);
+                }
+            }
+            else if (type == "mute") {
+                if (data.target == "__all__" || data.target == this.clientId) {
+                    let canSkip = false;
+                    if (data.exception) {
+                        if (data.exception == this.clientId) {
+                            canSkip = true;
+                        }
+                    }
+                    if (!canSkip) {
+                        window.muteMicrophone();
+                        this.setMuteLock(true);
+                    }
+                }
+            }
+            else if (type == "teleport") {
+                console.log("Teleporting!");
+                if (data.matrixWorld) {
+                    AFRAME.scenes[0].systems["hubs-systems"].characterController.enqueueWaypointTravelTo(
+                        data.matrixWorld,
+                        true,
+                        {
+                            willDisableMotion: false,
+                            willDisableTeleporting: false,
+                            willMaintainInitialOrientation: true,
+                            snapToNavMesh: true
+                        }
+                    );
+                }
+            }
 
             this.appendToActionHistory({
                 type: type, 
                 data: data
             });
+        }
+
+        if (this.synced && !initiallySynced) {
+            if (this.globalGet("mute_all")) {
+                window.muteMicrophone();
+                this.setMuteLock(true);
+            }
         }
     }
 
@@ -452,15 +708,75 @@ class BoldInteractions {
     openInfoPanel(url, type, ext) {
         handleExitTo2DInterstitial();
         if (type == "tour") {
-            this.infoPanelUrl = "https://boldlyxr-development.nl/kohler/hubs/tours/" + url + "/";
+            this.infoPanelUrl = "https://boldlyxr-development.nl/kohler/hubs/tours/" + url + "/index.htm";
         }
         else if (type == "file") {
             this.infoPanelUrl = "https://vr-kohler-1-assets.vr-kohler.com/hubs/assets/custom/file/" + ext + "/" + url + "." + ext;
         }
         else {
-            this.infoPanelUrl = "https://vr-kohler-1-assets.vr-kohler.com/hubs/assets/custom/" + type + "/" + url + "/";
+            this.infoPanelUrl = "https://vr-kohler-1-assets.vr-kohler.com/hubs/assets/custom/" + type + "/" + url + "/index.htm";
         }
         window.UIRootInstance.pushHistoryState("modal", "boldly-info-panel");
+    }
+
+    openTeleportPanel() {
+        handleExitTo2DInterstitial();
+        window.UIRootInstance.pushHistoryState("modal", "boldly-teleport-panel");
+    }
+
+    openCodePanel(text, code, resultAction, resultData, obj) {
+        handleExitTo2DInterstitial();
+        this.codePanelText = text;
+        this.codePanelCode = code;
+        this.codePanelResultAction = resultAction;
+        this.codePanelResultData = resultData;
+        this.codePanelObj = obj;
+        window.UIRootInstance.pushHistoryState("modal", "boldly-code-panel");
+    }
+
+    checkChatSend(message) {
+        if (!this.finishedCode) {
+            if (message == "0581") {
+                console.log("Entered secret code");
+
+                let children = this.findEntitiesByName("commercialfinish")
+                for (let i = 0; i < children.length; i++) {
+                    let externalActionFields = this.breakdownName(children[i].object3D);
+                    this.performInteraction(children[i].object3D, externalActionFields);
+                }
+
+                this.finishedCode = true;
+            }
+
+        }
+    }
+
+    onSit() {
+        if (!this.finishedSit && this.hasJoined) {
+            console.log("User sit");
+
+            let children = this.findEntitiesByName("boardroomsit")
+            for (let i = 0; i < children.length; i++) {
+                let externalActionFields = this.breakdownName(children[i].object3D);
+                this.performInteraction(children[i].object3D, externalActionFields);
+            }
+
+            this.finishedSit = true;
+        }
+    }
+
+    onShare() {
+        if (!this.finishedShare) {
+            console.log("User shared media");
+
+            let children = this.findEntitiesByName("boardroomshare")
+            for (let i = 0; i < children.length; i++) {
+                let externalActionFields = this.breakdownName(children[i].object3D);
+                this.performInteraction(children[i].object3D, externalActionFields);
+            }
+
+            this.finishedShare = true;
+        }
     }
 }
 

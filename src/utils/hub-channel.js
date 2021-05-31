@@ -367,7 +367,9 @@ export default class HubChannel extends EventTarget {
     });
   };
 
-  mute = sessionId => this.channel.push("mute", { session_id: sessionId });
+  mute = sessionId => () => {
+    this.channel.push("mute", { session_id: sessionId });
+  };
   addOwner = sessionId => this.channel.push("add_owner", { session_id: sessionId });
   removeOwner = sessionId => this.channel.push("remove_owner", { session_id: sessionId });
 

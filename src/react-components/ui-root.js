@@ -55,6 +55,9 @@ import ClientInfoDialog from "./client-info-dialog.js";
 import ObjectInfoDialog from "./object-info-dialog.js";
 // oli414
 import InfoPanel from "../BoldlyXR/info-panel.js";
+import TeleportPanel from "../BoldlyXR/teleport-panel.js";
+import CodePanel from "../BoldlyXR/code-panel.js";
+
 import OAuthDialog from "./oauth-dialog.js";
 import TweetDialog from "./tweet-dialog.js";
 import LobbyChatBox from "./lobby-chat-box.js";
@@ -1846,6 +1849,18 @@ class UIRoot extends Component {
               stateValue="boldly-info-panel"
               history={this.props.history}
               render={() => this.renderDialog(InfoPanel, { history: this.props.history, onClose: this.closeDialog })}
+            />
+            <StateRoute
+              stateKey="modal"
+              stateValue="boldly-teleport-panel"
+              history={this.props.history}
+              render={() => this.renderDialog(TeleportPanel, { history: this.props.history, onClose: this.closeDialog })}
+            />
+            <StateRoute
+              stateKey="modal"
+              stateValue="boldly-code-panel"
+              history={this.props.history}
+              render={() => this.renderDialog(CodePanel, { history: this.props.history, onClose: this.closeDialog })}
             />
             {showClientInfo && (
               <ClientInfoDialog

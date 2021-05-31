@@ -86,8 +86,24 @@ export default class PresenceList extends Component {
     navigateToClientInfo(this.props.history, clientId);
   };
 
+  toggleMute = (clientId, muted) => {
+    if (clientId == window.BoldInteractions.clientId)
+      return;
+    if (muted) {
+      this.unmute(clientId);
+    }
+    else {
+      this.mute(clientId);
+    }
+  };
+
   mute = clientId => {
     this.props.hubChannel.mute(clientId);
+    window.BoldInteractions.dispatchAction("mute", {target: clientId});
+  };
+
+  unmute = clientId => {
+    window.BoldInteractions.dispatchAction("unmute", {target: clientId});
   };
 
   muteAll = () => {
@@ -100,6 +116,13 @@ export default class PresenceList extends Component {
         }
       }
     }
+    window.BoldInteractions.dispatchGlobalSet("mute_all", true);
+    window.BoldInteractions.dispatchAction("mute", {target: "__all__", exception: window.BoldInteractions.clientId});
+  };
+
+  unmuteAll = () => {
+    window.BoldInteractions.dispatchGlobalSet("mute_all", false);
+    window.BoldInteractions.dispatchAction("unmute", {target: "__all__"});
   };
 
   domForPresence = ([sessionId, data]) => {
@@ -138,7 +161,7 @@ export default class PresenceList extends Component {
               [styles.icon]: !muted,
               [styles.iconButton]: canMuteIndividual
             })}
-            onClick={() => (canMuteUsers ? this.mute(sessionId) : null)}
+            onClick={() => (canMuteUsers ? this.toggleMute(sessionId, muted) : null)}
           >
             <i>{micState}</i>
           </div>
@@ -193,10 +216,26 @@ export default class PresenceList extends Component {
 
   renderExpandedList() {
     const canMuteUsers = this.props.hubChannel.can("mute_users");
+
+    let muteBtn = (
+      <button title="Mute All" onClick={this.muteAll} className={styles.muteButton}>
+          <FormattedMessage id="presence.mute_all" />
+      </button>
+    );
+
+    if (window.BoldInteractions.globalGet("mute_all")) {
+      muteBtn = (
+        <button title="Unmute All" onClick={this.unmuteAll} className={styles.muteButton}>
+          <FormattedMessage id="presence.unmute_all" />
+        </button>
+      );
+    }
+
     const muteAll = canMuteUsers && (
       <div className={styles.muteAll}>
-        <button title="Mute All" onClick={this.muteAll} className={styles.muteButton}>
-          <FormattedMessage id="presence.mute_all" />
+        {muteBtn}
+        <button title="Teleport Everyone" onClick={() => { window.BoldInteractions.teleportAll() }} className={styles.muteButton}>
+            <FormattedMessage id="presence.teleport_all" />
         </button>
       </div>
     );
@@ -213,6 +252,12 @@ export default class PresenceList extends Component {
             {Object.entries(this.props.presences || {})
               .filter(([k]) => k !== this.props.sessionId)
               .map(this.domForPresence)}
+          </div>
+          <hr/>
+          <div className={styles.muteAll}>
+            <button title="Teleport Locations" onClick={() => { window.BoldInteractions.openTeleportPanel() }} className={styles.muteButton}>
+                Teleport Locations
+            </button>
           </div>
           <div className={styles.signIn}>
             {this.props.signedIn ? (

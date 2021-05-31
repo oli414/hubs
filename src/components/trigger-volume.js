@@ -25,6 +25,9 @@ AFRAME.registerComponent("trigger-volume", {
   init() {
     this.boundingBox = new THREE.Box3();
     this.collidingLastFrame = {};
+
+    // oli414
+    window.BoldInteractions.setupTriggerVolume(this);
   },
   update() {
     this.el.object3D.getWorldPosition(boundingBoxWorldPositionVec);
@@ -45,9 +48,17 @@ AFRAME.registerComponent("trigger-volume", {
       const collidingLastFrame = this.collidingLastFrame[object3D.id];
 
       if (isColliding && !collidingLastFrame) {
-        this.data.target.setAttribute(this.data.enterComponent, this.data.enterProperty, this.data.enterValue);
+        if (this.data.target) {
+          this.data.target.setAttribute(this.data.enterComponent, this.data.enterProperty, this.data.enterValue);
+        }
+        // oli414
+        if (this.onBoldCollide) {
+          this.onBoldCollide();
+        }
       } else if (!isColliding && collidingLastFrame) {
-        this.data.target.setAttribute(this.data.leaveComponent, this.data.leaveProperty, this.data.leaveValue);
+        if (this.data.target) {
+          this.data.target.setAttribute(this.data.leaveComponent, this.data.leaveProperty, this.data.leaveValue);
+        }
       }
 
       this.collidingLastFrame[object3D.id] = isColliding;

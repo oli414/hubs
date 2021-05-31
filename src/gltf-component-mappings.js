@@ -145,6 +145,7 @@ AFRAME.GLTFModelPlus.registerComponent("waypoint", "waypoint", (el, componentNam
       networkId: components.networked.id
     });
   }
+  window.BoldInteractions.registerWaypoint(el);
   el.setAttribute("waypoint", componentData);
 });
 

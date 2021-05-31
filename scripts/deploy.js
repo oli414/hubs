@@ -48,6 +48,7 @@ const getTs = (() => {
 
   const env = Object.assign(process.env, buildEnv);
 
+  
   for (const d in ["./dist", "./admin/dist"]) {
     rmdir(d, err => {
       if (err) {
@@ -82,6 +83,7 @@ const getTs = (() => {
     });
   });
 
+  
   await new Promise((resolve, reject) => {
     exec("npm run build", { cwd: "./admin", env }, err => {
       if (err) reject(err);

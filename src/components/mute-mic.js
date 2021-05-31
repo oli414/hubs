@@ -35,6 +35,10 @@ AFRAME.registerComponent("mute-mic", {
     this.onToggle = this.onToggle.bind(this);
     this.onMute = this.onMute.bind(this);
     this.onUnmute = this.onUnmute.bind(this);
+
+    window.toggleMicrophone = this.onToggle;
+    window.muteMicrophone = this.onMute;
+    window.unmuteMicrophone = this.onUnmute;
   },
 
   play: function() {
@@ -56,12 +60,16 @@ AFRAME.registerComponent("mute-mic", {
     if (!this.el.sceneEl.is("entered")) return;
 
     this.el.sceneEl.systems["hubs-systems"].soundEffectsSystem.playSoundOneShot(SOUND_TOGGLE_MIC);
-    if (this.el.is("muted")) {
+    if (this.el.is("muted") && !window.BoldInteractions.muteLocked) {
       NAF.connection.adapter.enableMicrophone(true);
       this.el.removeState("muted");
-    } else {
+    } else if (!this.el.is("muted")) {
       NAF.connection.adapter.enableMicrophone(false);
       this.el.addState("muted");
+    }
+    else {
+      // oli414
+      alert("You're currently muted by a host. You may unmute yourself again once the host gives you permission to unmute.");
     }
   },
 

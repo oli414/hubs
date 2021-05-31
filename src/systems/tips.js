@@ -25,7 +25,7 @@ const LOCAL_STORAGE_KEY = "__hubs_finished_tips";
 
 const TIPS = {
   desktop: {
-    top: ["pen_mode", "video_share_mode", "mute_mode"],
+    top: ["pen_mode", "video_share_mode", "mute_mode", "mute_lock_mode"],
     bottom: [
       "look",
       "locomotion",
@@ -46,7 +46,7 @@ const TIPS = {
     ]
   },
   mobile: {
-    top: ["pen_mode", "video_share_mode", "freeze_mode", "mute_mode"],
+    top: ["pen_mode", "video_share_mode", "freeze_mode", "mute_mode", "mute_lock_mode"],
     bottom: [
       "look",
       "locomotion",
@@ -319,7 +319,10 @@ const VALIDATORS = {
     return scene.is("sharing_video") ? VALID : INVALID;
   },
   mute_mode: function(userinput, scene) {
-    return scene.is("muted") ? VALID : INVALID;
+    return (scene.is("muted") && !window.BoldInteractions.muteLocked) ? VALID : INVALID;
+  },
+  mute_lock_mode: function(userinput, scene) {
+    return (scene.is("muted") && window.BoldInteractions.muteLocked) ? VALID : INVALID;
   },
   feedback: function(/*userinput, scene, mediaCounter, store*/) {
     /*if (configs.feature("show_feedback_ui") && store && store.state.activity.entryCount >= NUM_ENTRIES_FOR_FEEDBACK_TIP)

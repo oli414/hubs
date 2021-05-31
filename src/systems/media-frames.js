@@ -1,6 +1,7 @@
 import { MediaType } from "../utils/media-utils";
 import { TEXTURES_FLIP_Y } from "../loaders/HubsTextureLoader";
 import { applyPersistentSync } from "../utils/permissions-utils";
+import { Vector3 } from "three";
 
 // TODO better handling for 3d objects
 function scaleForAspectFit(containerSize, itemSize) {
@@ -249,22 +250,44 @@ AFRAME.registerComponent("media-frame", {
   },
 
   snapObject(capturedEl) {
+    window.BoldInteractions.onShare();
+
     // TODO this assumes media frames are all in world space
-    capturedEl.object3D.position.copy(this.el.object3D.position);
-    capturedEl.object3D.rotation.copy(this.el.object3D.rotation);
+    //capturedEl.object3D.position.copy(this.el.object3D.position);
+    //capturedEl.object3D.rotation.copy(this.el.object3D.rotation);
+
+    let position = new THREE.Vector3();
+    this.el.object3D.getWorldPosition(position);
+    capturedEl.object3D.position.copy(position);
+
+    let rotation = new THREE.Quaternion();
+    this.el.object3D.getWorldQuaternion(rotation);
+    capturedEl.object3D.quaternion.copy(rotation);
+
     capturedEl.object3D.matrixNeedsUpdate = true;
     capturedEl.components["floaty-object"].setLocked(true);
   },
 
   capture(capturableEntity) {
     if (NAF.utils.isMine(this.el) || NAF.utils.takeOwnership(this.el)) {
+      window.BoldInteractions.onShare();
+
       this.el.setAttribute("media-frame", {
         targetId: capturableEntity.id,
         originalTargetScale: new THREE.Vector3().copy(capturableEntity.object3D.scale)
       });
       // TODO this assumes media frames are all in world space
-      capturableEntity.object3D.position.copy(this.el.object3D.position);
-      capturableEntity.object3D.rotation.copy(this.el.object3D.rotation);
+      //capturableEntity.object3D.position.copy(this.el.object3D.position);
+      //capturableEntity.object3D.rotation.copy(this.el.object3D.rotation);
+
+      let position = new THREE.Vector3();
+      this.el.object3D.getWorldPosition(position);
+      capturableEntity.object3D.position.copy(position);
+  
+      let rotation = new THREE.Quaternion();
+      this.el.object3D.getWorldQuaternion(rotation);
+      capturableEntity.object3D.quaternion.copy(rotation);
+
       capturableEntity.object3D.scale.setScalar(
         scaleForAspectFit(this.data.bounds, capturableEntity.getObject3D("mesh").scale)
       );

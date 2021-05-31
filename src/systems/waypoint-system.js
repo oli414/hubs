@@ -146,11 +146,17 @@ export class WaypointSystem {
 
   teleportToWaypoint(iconEl, waypointComponent) {
     return function onInteract() {
+      if (iconEl) {
+        window.BoldInteractions.onSit();
+      }
       this.moveToWaypoint(waypointComponent, false);
     }.bind(this);
   }
   tryTeleportToOccupiableWaypoint(iconEl, waypointComponent) {
     return function onInteract() {
+      if (iconEl) {
+        window.BoldInteractions.onSit();
+      }
       const previouslyOccupiedWaypoints = this.ready.filter(isOccupiedByMe);
       this.tryToOccupy(waypointComponent).then(didOccupy => {
         if (didOccupy) {
