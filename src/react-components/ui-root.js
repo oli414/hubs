@@ -24,40 +24,8 @@ import { getMicrophonePresences } from "../utils/microphone-presence";
 import { getCurrentStreamer } from "../utils/component-utils";
 
 import ProfileEntryPanel from "./profile-entry-panel";
-<<<<<<< HEAD
-import MediaBrowser from "./media-browser";
-
-import CreateObjectDialog from "./create-object-dialog.js";
-import ChangeSceneDialog from "./change-scene-dialog.js";
-import AvatarUrlDialog from "./avatar-url-dialog.js";
-import InviteDialog from "./invite-dialog.js";
-import InviteTeamDialog from "./invite-team-dialog.js";
-import LinkDialog from "./link-dialog.js";
-import SignInDialog from "./sign-in-dialog.js";
-import RoomSettingsDialog from "./room-settings-dialog.js";
-import CloseRoomDialog from "./close-room-dialog.js";
-import Tip from "./tip.js";
-import WebRTCScreenshareUnsupportedDialog from "./webrtc-screenshare-unsupported-dialog.js";
-import WebVRRecommendDialog from "./webvr-recommend-dialog.js";
-import FeedbackDialog from "./feedback-dialog.js";
-import HelpDialog from "./help-dialog.js";
-import SafariMicDialog from "./safari-mic-dialog.js";
-import LeaveRoomDialog from "./leave-room-dialog.js";
-import RoomInfoDialog from "./room-info-dialog.js";
-import ClientInfoDialog from "./client-info-dialog.js";
-import ObjectInfoDialog from "./object-info-dialog.js";
-// oli414
-import InfoPanel from "../BoldlyXR/info-panel.js";
-import TeleportPanel from "../BoldlyXR/teleport-panel.js";
-import CodePanel from "../BoldlyXR/code-panel.js";
-
-import OAuthDialog from "./oauth-dialog.js";
-import TweetDialog from "./tweet-dialog.js";
-import LobbyChatBox from "./lobby-chat-box.js";
-=======
 import MediaBrowserContainer from "./media-browser";
 
->>>>>>> upstream/hubs-cloud
 import EntryStartPanel from "./entry-start-panel.js";
 import AvatarEditor from "./avatar-editor";
 import PreferencesScreen from "./preferences-screen.js";
@@ -233,17 +201,10 @@ class UIRoot extends Component {
   constructor(props) {
     super(props);
 
-<<<<<<< HEAD
-    if (props.showSafariMicDialog) {
-      this.state.dialog = <SafariMicDialog closable={false} />;
-    }
+    props.mediaSearchStore.setHistory(props.history);
 
     // oli414
     window.UIRootInstance = this;
-
-=======
->>>>>>> upstream/hubs-cloud
-    props.mediaSearchStore.setHistory(props.history);
 
     // An exit handler that discards event arguments and can be cleaned up.
     this.exitEventHandler = () => this.props.exitScene();
@@ -1367,215 +1328,7 @@ class UIRoot extends Component {
                   performConditionalSignIn={this.props.performConditionalSignIn}
                   showNonHistoriedDialog={this.showNonHistoriedDialog}
                   store={this.props.store}
-<<<<<<< HEAD
-                  mediaSearchStore={this.props.mediaSearchStore}
-                  avatarId={props.location.state.detail && props.location.state.detail.avatarId}
-                />
-              )}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="room_settings"
-              history={this.props.history}
-              render={() =>
-                this.renderDialog(RoomSettingsDialog, {
-                  showPublicRoomSetting: this.props.hubChannel.can("update_hub_promotion"),
-                  initialSettings: {
-                    name: this.props.hub.name,
-                    description: this.props.hub.description,
-                    member_permissions: this.props.hub.member_permissions,
-                    room_size: this.props.hub.room_size,
-                    allow_promotion: this.props.hub.allow_promotion,
-                    entry_mode: this.props.hub.entry_mode
-                  },
-                  onChange: settings => this.props.hubChannel.updateHub(settings),
-                  hubChannel: this.props.hubChannel
-                })
-              }
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="close_room"
-              history={this.props.history}
-              render={() =>
-                this.renderDialog(CloseRoomDialog, {
-                  roomName: this.props.hub.name,
-                  onConfirm: () => this.props.hubChannel.closeHub()
-                })
-              }
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="support"
-              history={this.props.history}
-              render={() => this.renderDialog(InviteTeamDialog, { hubChannel: this.props.hubChannel })}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="create"
-              history={this.props.history}
-              render={() => this.renderDialog(CreateObjectDialog, { onCreate: this.createObject })}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="change_scene"
-              history={this.props.history}
-              render={() => this.renderDialog(ChangeSceneDialog, { onChange: this.changeScene })}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="avatar_url"
-              history={this.props.history}
-              render={() => this.renderDialog(AvatarUrlDialog, { onChange: this.setAvatarUrl })}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="webvr"
-              history={this.props.history}
-              render={() => this.renderDialog(WebVRRecommendDialog)}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="webrtc-screenshare"
-              history={this.props.history}
-              render={() => this.renderDialog(WebRTCScreenshareUnsupportedDialog)}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="room_info"
-              history={this.props.history}
-              render={() => {
-                return this.renderDialog(RoomInfoDialog, {
-                  store: this.props.store,
-                  scene: this.props.hub.scene,
-                  hubName: this.props.hub.name,
-                  hubDescription: this.props.hub.description
-                });
-              }}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="feedback"
-              history={this.props.history}
-              render={() =>
-                this.renderDialog(FeedbackDialog, {
-                  history: this.props.history,
-                  onClose: () => this.pushHistoryState("modal", null)
-                })
-              }
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="help"
-              history={this.props.history}
-              render={() =>
-                this.renderDialog(HelpDialog, {
-                  history: this.props.history,
-                  onClose: () => this.pushHistoryState("modal", null)
-                })
-              }
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="tweet"
-              history={this.props.history}
-              render={() => this.renderDialog(TweetDialog, { history: this.props.history, onClose: this.closeDialog })}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="boldly-info-panel"
-              history={this.props.history}
-              render={() => this.renderDialog(InfoPanel, { history: this.props.history, onClose: this.closeDialog })}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="boldly-teleport-panel"
-              history={this.props.history}
-              render={() => this.renderDialog(TeleportPanel, { history: this.props.history, onClose: this.closeDialog })}
-            />
-            <StateRoute
-              stateKey="modal"
-              stateValue="boldly-code-panel"
-              history={this.props.history}
-              render={() => this.renderDialog(CodePanel, { history: this.props.history, onClose: this.closeDialog })}
-            />
-            {showClientInfo && (
-              <ClientInfoDialog
-                clientId={clientInfoClientId}
-                onClose={this.closeDialog}
-                history={this.props.history}
-                presences={this.props.presences}
-                hubChannel={this.props.hubChannel}
-                showNonHistoriedDialog={this.showNonHistoriedDialog}
-                performConditionalSignIn={this.props.performConditionalSignIn}
-              />
-            )}
-            {showObjectInfo && (
-              <ObjectInfoDialog
-                scene={this.props.scene}
-                el={this.state.objectInfo}
-                src={this.state.objectSrc}
-                pinned={this.state.objectInfo && this.state.objectInfo.components["networked"].data.persistent}
-                hubChannel={this.props.hubChannel}
-                onPinChanged={() => switchToInspectingObject(this.state.objectInfo)}
-                onNavigated={el => switchToInspectingObject(el)}
-                onClose={() => {
-                  if (this.props.scene.systems["hubs-systems"].cameraSystem.mode === CAMERA_MODE_INSPECT) {
-                    this.props.scene.systems["hubs-systems"].cameraSystem.uninspect();
-                  }
-                  this.setState({ isObjectListExpanded: false, objectInfo: null });
-                }}
-              />
-            )}
-            {((!enteredOrWatching && !this.state.isObjectListExpanded && !showObjectInfo && this.props.hub) ||
-              this.isWaitingForAutoExit()) && (
-              <div className={styles.uiDialog}>
-                <PresenceLog
-                  entries={presenceLogEntries}
-                  presences={this.props.presences}
-                  hubId={this.props.hub.hub_id}
-                  history={this.props.history}
-                />
-                <div className={dialogBoxContentsClassNames}>{entryDialog}</div>
-              </div>
-            )}
-            {enteredOrWatchingOrPreload &&
-              this.props.hub && (
-                <PresenceLog
-                  inRoom={true}
-                  presences={this.props.presences}
-                  entries={presenceLogEntries}
-                  hubId={this.props.hub.hub_id}
-                  history={this.props.history}
-                />
-              )}
-            {entered &&
-              this.props.activeTips &&
-              this.props.activeTips.bottom &&
-              (!presenceLogEntries || presenceLogEntries.length === 0) &&
-              !showBroadcastTip && (
-                <Tip tip={this.props.activeTips.bottom} tipRegion="bottom" pushHistoryState={this.pushHistoryState} />
-              )}
-            {enteredOrWatchingOrPreload &&
-              showBroadcastTip && (
-                <Tip
-                  tip={hasDiscordBridges ? "discord" : "embed"}
-                  broadcastTarget={discordSnippet}
-                  onClose={() => this.confirmBroadcastedRoom()}
-                />
-              )}
-            {enteredOrWatchingOrPreload &&
-              !this.state.objectInfo &&
-              !this.state.frozen && (
-                <InWorldChatBox
-                  discordBridges={discordBridges}
-                  onSendMessage={this.sendMessage}
-                  onObjectCreated={this.createObject}
-                  enableSpawning={entered}
-                  history={this.props.history}
-=======
                   scene={this.props.scene}
->>>>>>> upstream/hubs-cloud
                 />
               )}
             {this.props.hub && (
