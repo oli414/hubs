@@ -39,6 +39,9 @@ AFRAME.registerComponent("mute-mic", {
     window.toggleMicrophone = this.onToggle;
     window.muteMicrophone = this.onMute;
     window.unmuteMicrophone = this.onUnmute;
+    
+    this.store = window.APP.store;
+    this.store.addEventListener("statechanged", this.onStoreUpdated.bind(this));
   },
 
   play: function() {
@@ -65,7 +68,6 @@ AFRAME.registerComponent("mute-mic", {
       this.el.removeState("muted");
     } else if (!this.el.is("muted")) {
       NAF.connection.adapter.enableMicrophone(false);
-      this.el.addState("muted");
     }
     else {
       // oli414
@@ -77,14 +79,28 @@ AFRAME.registerComponent("mute-mic", {
     if (!NAF.connection.adapter) return;
     if (!this.el.is("muted")) {
       NAF.connection.adapter.enableMicrophone(false);
-      this.el.addState("muted");
     }
   },
 
   onUnmute: function() {
     if (this.el.is("muted")) {
       NAF.connection.adapter.enableMicrophone(true);
-      this.el.removeState("muted");
+    }
+  },
+
+  onStoreUpdated: function() {
+    const micMuted = this.store.state.settings["micMuted"];
+    const isMicShared = window.APP.mediaDevicesManager?.isMicShared;
+    if (micMuted !== undefined) {
+      if (isMicShared) {
+        if (micMuted) {
+          this.el.addState("muted");
+        } else {
+          this.el.removeState("muted");
+        }
+      } else {
+        this.el.addState("muted");
+      }
     }
   }
 });
