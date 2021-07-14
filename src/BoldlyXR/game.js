@@ -1,6 +1,11 @@
 
 import BoldInteractions from "./interactions.js";
 
+/*
+    Dit bestand is specifiek voor de Kohler Pgen muur waar het niet mogelijk was om via acties de gevraagde functionaliteit toe te voegen.
+    Eventuele complexere ervaringen in de toekomst kunnen ook via een vergelijkbare "Game class" toegevoegd worden.
+*/
+
 class KeyList {
     constructor(list) {
         for (let i = 0; i < list.length; i++) {

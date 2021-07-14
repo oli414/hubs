@@ -89,7 +89,7 @@ function getPersonName(person, intl) {
   return person.profile.displayName + (person.isMe ? ` (${you})` : "");
 }
 
-export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, onMuteAll }) {
+export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, onMuteAll, onUnmuteAll }) {
   const intl = useIntl();
 
   return (
@@ -113,6 +113,19 @@ export function PeopleSidebar({ people, onSelectPerson, onClose, showMuteAll, on
       }
     >
       <List>
+        {/*
+        <div className={styles.button} onClick={onUnmuteAll}>
+          <FormattedMessage id="people-sidebar.unmute-all-button" defaultMessage="Unmute All" />
+        </div>
+        <div className={styles.button} onClick={onUnmuteAll}>
+          <FormattedMessage id="people-sidebar.teleport-all" defaultMessage="Teleport All" />
+        </div>
+        <div className={styles.divider}>.</div>
+        <div className={styles.button} onClick={onUnmuteAll}>
+          <FormattedMessage id="people-sidebar.teleport-to" defaultMessage="Teleport To" />
+        </div>
+        <div className={styles.divider}>.</div>
+        */}
         {people.map(person => {
           const DeviceIcon = getDeviceIconComponent(person.context);
           const VoiceIcon = getVoiceIconComponent(person.micPresence);
@@ -149,6 +162,7 @@ PeopleSidebar.propTypes = {
   onSelectPerson: PropTypes.func,
   showMuteAll: PropTypes.bool,
   onMuteAll: PropTypes.func,
+  onUnmuteAll: PropTypes.func,
   onClose: PropTypes.func
 };
 

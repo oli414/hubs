@@ -50,6 +50,18 @@ function PeopleListContainer({ hubChannel, people, onSelectPerson, onClose }) {
           hubChannel.mute(person.id);
         }
       }
+
+      
+      window.BoldInteractions.dispatchGlobalSet("mute_all", true);
+      window.BoldInteractions.dispatchAction("mute", {target: "__all__", exception: window.BoldInteractions.clientId});
+    },
+    [people, hubChannel]
+  );
+
+  const onUnmuteAll = useCallback(
+    () => {
+      window.BoldInteractions.dispatchGlobalSet("mute_all", false);
+      window.BoldInteractions.dispatchAction("unmute", {target: "__all__"});
     },
     [people, hubChannel]
   );
@@ -60,6 +72,7 @@ function PeopleListContainer({ hubChannel, people, onSelectPerson, onClose }) {
       onSelectPerson={onSelectPerson}
       onClose={onClose}
       onMuteAll={onMuteAll}
+      onUnmuteAll={onUnmuteAll}
       showMuteAll={hubChannel.can("mute_users")}
     />
   );

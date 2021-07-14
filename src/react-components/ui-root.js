@@ -94,6 +94,10 @@ import { TipContainer, FullscreenTip } from "./room/TipContainer";
 import { SpectatingLabel } from "./room/SpectatingLabel";
 import { SignInMessages } from "./auth/SignInModal";
 
+import infoPanel from "../BoldlyXR/info-panel";
+import teleportPanel from "../BoldlyXR/teleport-panel";
+import contactPanel from "../BoldlyXR/contact-panel";
+
 const avatarEditorDebug = qsTruthy("avatarEditorDebug");
 
 const IN_ROOM_MODAL_ROUTER_PATHS = ["/media"];
@@ -1380,6 +1384,24 @@ class UIRoot extends Component {
                           onViewProfile={sessionId => this.setSidebar("user", { selectedUserId: sessionId })}
                         />
                       )}
+                    <StateRoute
+                      stateKey="modal"
+                      stateValue="boldly-info-panel"
+                      history={this.props.history}
+                      render={() => this.renderDialog(infoPanel, { history: this.props.history, onClose: this.closeDialog })}
+                    />
+                    <StateRoute
+                      stateKey="modal"
+                      stateValue="boldly-contact-panel"
+                      history={this.props.history}
+                      render={() => this.renderDialog(contactPanel, { history: this.props.history, onClose: this.closeDialog })}
+                    />
+                    <StateRoute
+                      stateKey="modal"
+                      stateValue="boldly-teleport-panel"
+                      history={this.props.history}
+                      render={() => this.renderDialog(teleportPanel, { history: this.props.history, onClose: this.closeDialog })}
+                    />
                     <TipContainer
                       hide={this.props.activeObject}
                       inLobby={watching}

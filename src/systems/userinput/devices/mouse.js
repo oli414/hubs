@@ -21,6 +21,9 @@ const isInModal = (function() {
 
 export class MouseDevice {
   constructor() {
+    // oli414
+    window.BoldInteractions.mouse = this;
+
     this.events = [];
     this.coords = [0, 0]; // normalized screenspace coordinates in [(-1, 1), (-1, 1)]
     this.movementXY = [0, 0]; // deltas
